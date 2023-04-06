@@ -14,6 +14,10 @@ kbs-grpc-as:
 kbs-native-as-no-verifier:
 	cargo build --no-default-features --features native-as-no-verifier,rustls
 
+.PHONY: kbs-native-as-hpcr-verifier
+kbs-native-as-hpcr-verifier:
+	cargo build --no-default-features --features native-as-hpcr-verifier,rustls
+
 .PHONY: kbs-native-as-openssl
 kbs-native-as-openssl:
 	cargo build --no-default-features --features native-as,openssl
@@ -25,6 +29,10 @@ kbs-grpc-as-openssl:
 .PHONY: kbs-native-as-no-verifier-openssl
 kbs-native-as-no-verifier-openssl:
 	cargo build --no-default-features --features native-as-no-verifier,openssl
+
+.PHONY: kbs-native-as-hpcr-verifier-openssl
+kbs-native-as-hpcr-verifier-openssl:
+	cargo build --no-default-features --features native-as-hpcr-verifier,openssl
 
 .PHONY: check
 check:

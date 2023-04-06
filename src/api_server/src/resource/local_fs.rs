@@ -31,6 +31,7 @@ impl Repository for LocalFs {
     async fn read_secret_resource(&self, resource_desc: ResourceDesc) -> Result<Vec<u8>> {
         let mut resource_path = PathBuf::from(&self.repo_dir_path);
 
+        println!("read_secret_resource {} {} {}", resource_desc.repository_name, resource_desc.resource_type, resource_desc.resource_tag);
         let ref_resource_path = format!(
             "{}/{}/{}",
             resource_desc.repository_name, resource_desc.resource_type, resource_desc.resource_tag
