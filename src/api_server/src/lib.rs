@@ -84,6 +84,7 @@ pub struct ApiServer {
     attestation_service: AttestVerifier,
     http_timeout: i64,
     insecure_api: bool,
+    client_ca: Option<PathBuf>,
 }
 
 impl ApiServer {
@@ -98,6 +99,7 @@ impl ApiServer {
         attestation_service: AttestVerifier,
         http_timeout: i64,
         insecure_api: bool,
+        client_ca: Option<PathBuf>,
     ) -> Result<Self> {
         if !insecure && (private_key.is_none() || certificate.is_none()) {
             bail!("Missing HTTPS credentials");
@@ -113,6 +115,7 @@ impl ApiServer {
             attestation_service,
             http_timeout,
             insecure_api,
+            client_ca,
         })
     }
 
@@ -156,7 +159,10 @@ impl ApiServer {
 
     #[cfg(feature = "openssl")]
     fn tls_config(&self) -> Result<SslAcceptorBuilder> {
-        use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+        use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod, SslVerifyMode};
+        use openssl::x509::store::X509StoreBuilder;
+        use openssl::x509::X509;
+        use std::fs;
 
         let cert_file = self
             .certificate
@@ -171,6 +177,27 @@ impl ApiServer {
         let mut builder = SslAcceptor::mozilla_modern(SslMethod::tls())?;
         builder.set_private_key_file(key_file, SslFiletype::PEM)?;
         builder.set_certificate_chain_file(cert_file)?;
+
+        match self.client_ca.clone() {
+            None => {
+                log::info!("Client CA not found. mTLS is not used.");
+            },
+            Some(client_ca_file) => {
+                log::info!("Client CA found. mTLS is enabled.");
+
+                let client_ca = fs::read_to_string(client_ca_file).unwrap().into_bytes();
+                let client_ca = X509::from_pem(&client_ca).unwrap();
+                let mut x509_client_store_builder = X509StoreBuilder::new()?;
+                x509_client_store_builder.add_cert(client_ca)?;
+                let client_cert_store = x509_client_store_builder.build();
+                builder.set_verify_cert_store(client_cert_store).unwrap();
+
+                let mut verify_mode = SslVerifyMode::empty();
+                verify_mode.set(SslVerifyMode::PEER, true);
+                verify_mode.set(SslVerifyMode::FAIL_IF_NO_PEER_CERT, true);
+                builder.set_verify(verify_mode);
+            }
+        }
 
         Ok(builder)
     }

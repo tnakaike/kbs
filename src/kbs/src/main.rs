@@ -55,6 +55,10 @@ struct Cli {
     /// - Resource Registration without verifying the JWK.
     #[arg(default_value_t = false, short, long)]
     insecure_api: bool,
+
+    /// Client CA for mTLS
+    #[arg(long)]
+    client_ca: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -87,6 +91,7 @@ async fn main() -> Result<()> {
         attestation_service,
         cli.timeout,
         cli.insecure_api,
+        cli.client_ca,
     )?;
 
     api_server.serve().await.map_err(anyhow::Error::from)
